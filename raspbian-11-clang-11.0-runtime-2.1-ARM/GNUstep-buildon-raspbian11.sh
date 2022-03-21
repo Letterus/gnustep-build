@@ -25,14 +25,13 @@ PROMPT=false
 # Install Requirements
 sudo apt update
 
-
 echo -e "\n\n${GREEN}Installing dependencies...${NC}"
 
 sudo apt-get update
-sudo apt -y install  build-essential git subversion clang-9 \
+sudo apt -y install clang build-essential git subversion \
 libpthread-workqueue0 libpthread-workqueue-dev \
 libxml2 libxml2-dev \
-libffi6 libffi-dev \
+libffi7 libffi-dev \
 libuuid1 uuid-dev uuid-runtime \
 libsctp1 libsctp-dev lksctp-tools \
 libavahi-core7 libavahi-core-dev \
@@ -65,8 +64,8 @@ libgnutls30 libgnutls28-dev \
 libpng-dev libpng16-16 \
 default-libmysqlclient-dev \
 libpq-dev \
-libstdc++-6-dev \
-gobjc-6 gobjc++-6 \
+libstdc++-10-dev \
+gobjc-10 gobjc++-10 \
 gobjc++ \
 libgif7 libgif-dev libwings3 libwings-dev libwutil5 \
 libcups2-dev \
@@ -77,8 +76,8 @@ libcairo2-dev \
 libxt-dev libssl-dev \
 libasound2-dev libjack-dev libjack0 libportaudio2 \
 libportaudiocpp0 portaudio19-dev \
-libstdc++-6-dev libstdc++-6-doc libstdc++-6-pic \
-libstdc++6 cmake xpdf libxrandr-dev libcurl4-gnutls-dev
+libstdc++-10-doc libstdc++-10-pic \
+cmake xpdf libxrandr-dev
 
 if [ "$APPS" = true ] ; then
   sudo apt -y install curl
@@ -89,8 +88,8 @@ mkdir GNUstep-build
 cd GNUstep-build
 
 # Set clang as compiler
-export CC=clang-9
-export CXX=clang++-9
+export CC=clang
+export CXX=clang++
 export RUNTIME_VERSION=gnustep-2.1
 export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 export LD=/usr/bin/ld.gold
@@ -101,7 +100,7 @@ export LDFLAGS="-fuse-ld=gold -L/usr/local/lib"
 echo -e "\n\n${GREEN}Checking out sources...${NC}"
 git clone https://github.com/apple/swift-corelibs-libdispatch
 cd swift-corelibs-libdispatch
-  git checkout swift-5.1.1-RELEASE 
+  git checkout swift-5.5-RELEASE 
 cd ..
 
 git clone https://github.com/gnustep/libobjc2.git
@@ -117,7 +116,7 @@ git clone https://github.com/gnustep/libs-back.git
 if [ "$APPS" = true ] ; then
   git clone https://github.com/gnustep/apps-projectcenter.git
   git clone https://github.com/gnustep/apps-gorm.git
-  wget http://savannah.nongnu.org/download/gap/PDFKit-1.0.1.tar.gz
+  wget http://savannah.nongnu.org/download/gap/PDFKit-1.2.0.tar.gz
   git clone https://github.com/gnustep/apps-gworkspace.git
   git clone https://github.com/gnustep/apps-systempreferences.git
 fi
@@ -144,8 +143,31 @@ sudo -E make install
 echo ". /usr/GNUstep/System/Library/Makefiles/GNUstep.sh" >> ~/.bashrc
 echo "export RUNTIME_VERSION=$RUNTIME_VERSION" >> ~/.bashrc
 
-
 showPrompt
+
+##
+## PATCH libDispatch cmake rules to fix warning/error in benchmark.c
+##
+echo -e "\n\n"
+echo -e "${GREEN}PATCHING libdispatch...${NC}"
+cd ../swift-corelibs-libdispatch
+
+patch -p1 <<"EOF"
+diff --git a/cmake/modules/DispatchCompilerWarnings.cmake b/cmake/modules/DispatchCompilerWarnings.cmake
+index 35b80f3..9b3eca3 100644
+--- a/cmake/modules/DispatchCompilerWarnings.cmake
++++ b/cmake/modules/DispatchCompilerWarnings.cmake
+@@ -64,7 +64,8 @@ else()
+   add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:-Wno-used-but-marked-unused>)
+   add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:-Wno-void-pointer-to-int-cast>)
+   add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:-Wno-vla>)
+-
++  add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:-Wno-implicit-int-float-conversion>)
++  
+   if(CMAKE_SYSTEM_NAME STREQUAL Android)
+     add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:-Wno-incompatible-function-pointer-types>)
+     add_compile_options($<$<OR:$<COMPILE_LANGUAGE:C>,$<COMPILE_LANGUAGE:CXX>>:-Wno-implicit-function-declaration>)
+EOF
 
 ## Build libDIspatch
 echo -e "\n\n"
@@ -169,7 +191,7 @@ echo -e "${GREEN}Building libobjc2...${NC}"
 cd ../../libobjc2
 rm -Rf build
 mkdir build && cd build
-cmake ../ -DCMAKE_C_COMPILER=clang-9 -DCMAKE_CXX_COMPILER=clang++-9 -DCMAKE_ASM_COMPILER=clang-9 -DTESTS=OFF
+cmake ../ -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_ASM_COMPILER=clang -DTESTS=OFF
 cmake --build .
 sudo -E make install
 sudo ldconfig
@@ -187,17 +209,6 @@ sudo -E make install
 . /usr/GNUstep/System/Library/Makefiles/GNUstep.sh
 
 showPrompt
-
-# Build GNUstep corebase (CoreFoundation)
-echo -e "\n\n"
-echo -e "${GREEN}Building GNUstep-corebase...${NC}"
-cd ../libs-corebase/
-./configure
-make -j8
-sudo -E make install
-
-showPrompt
-
 
 # Build GNUstep base
 echo -e "\n\n"
@@ -248,8 +259,8 @@ if [ "$APPS" = true ] ; then
 
   echo -e "${GREEN}Building PDFKit...${NC}"
   cd ..
-  tar xzf PDFKit-1.0.1.tar.gz
-  cd PDFKit-1.0.1/
+  tar xzf PDFKit-1.2.0.tar.gz
+  cd PDFKit-1.2.0
   ./configure
   make -j8
   sudo -E make install
@@ -277,11 +288,11 @@ if [ "$THEMES" = true ] ; then
   showPrompt
 
   echo -e "\n\n"
-  echo -e "${GREEN}Building rik.theme...${NC}"
-  cd ../rik.theme/
-  make clean
-  make -j8
-  sudo -E make install
+  echo -e "${GREEN}Not Building rik.theme...${NC}"
+  # cd ../rik.theme/
+  # make clean
+  # make -j8
+  # sudo -E make install
 
   showPrompt
 
