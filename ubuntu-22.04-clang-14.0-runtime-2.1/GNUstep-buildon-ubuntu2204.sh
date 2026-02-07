@@ -43,7 +43,7 @@ cd GNUstep-build
 export CC=clang
 export CXX=clang++
 export CXXFLAGS="-std=c++11"
-export RUNTIME_VERSION=gnustep-2.0
+export RUNTIME_VERSION=gnustep-2.1
 export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 export LD=/usr/bin/ld.gold
 export LDFLAGS="-fuse-ld=/usr/bin/ld.gold -L/usr/local/lib"
@@ -51,10 +51,10 @@ export LDFLAGS="-fuse-ld=/usr/bin/ld.gold -L/usr/local/lib"
 
 # Checkout sources
 echo -e "\n\n${GREEN}Checking out sources...${NC}"
-git clone --branch swift-5.10.1-RELEASE https://github.com/apple/swift-corelibs-libdispatch
-#cd swift-corelibs-libdispatch
-#  git checkout swift-5.2.2-RELEASE
-#cd ..
+git clone https://github.com/apple/swift-corelibs-libdispatch
+# cd swift-corelibs-libdispatch
+#   git checkout swift-5.5-RELEASE
+# cd ..
 git clone https://github.com/gnustep/libobjc2.git
 cd libobjc2
   git submodule init

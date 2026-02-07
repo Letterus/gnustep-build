@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -x
-
 # Show prompt function
 function showPrompt()
 {
@@ -16,7 +14,10 @@ GREEN=`tput setaf 2`
 NC=`tput sgr0` # No Color
 
 # Set to true to also build and install apps
-APPS=false
+APPS=true
+
+# Set to true to also build and install GNUstep themes
+THEMES=true
 
 # Set to true to pause after each build to verify successful build and installation
 PROMPT=false
@@ -27,9 +28,55 @@ sudo apt update
 echo -e "\n\n${GREEN}Installing dependencies...${NC}"
 
 sudo apt-get update
-sudo apt -y install clang build-essential wget git subversion cmake libffi-dev libxml2-dev \
-libgnutls28-dev libicu-dev libblocksruntime-dev libkqueue-dev libpthread-workqueue-dev autoconf libtool \
-libjpeg-dev libtiff-dev libffi-dev libcairo-dev libx11-dev libxt-dev libxft-dev libxrandr-dev
+sudo apt -y install clang build-essential git subversion \
+libxml2 libxml2-dev \
+libffi8 libffi-dev \
+libuuid1 uuid-dev uuid-runtime \
+libsctp1 libsctp-dev lksctp-tools \
+libavahi-core7 libavahi-core-dev \
+libavahi-client3 libavahi-client-dev \
+libavahi-common3 libavahi-common-dev libavahi-common-data \
+libgcrypt20 libgcrypt20-dev \
+libtiff6 libtiff5-dev \
+libbsd0 libbsd-dev \
+util-linux-locales \
+locales-all \
+libjpeg-dev \
+libtiff-dev \
+libcups2-dev \
+libfreetype6-dev \
+libcairo2-dev \
+libxt-dev \
+libgl1-mesa-dev \
+libpcap-dev \
+libc-dev libc++-dev libc++1 \
+python-dev-is-python3 swig \
+libedit-dev libedit2 libeditreadline-dev \
+binfmt-support libtinfo-dev \
+bison flex m4 wget \
+libicns1 libicns-dev \
+libxslt1.1 libxslt1-dev \
+libxft2 libxft-dev \
+libflite1 flite1-dev \
+libxmu6 libxpm4 wmaker-common \
+libgnutls30 libgnutls28-dev \
+libpng-dev libpng16-16 \
+default-libmysqlclient-dev \
+libpq-dev \
+libstdc++-11-dev \
+gobjc-11 gobjc++-11 \
+gobjc++ \
+libgif7 libgif-dev libwings3 libwings-dev libwutil5 \
+libcups2-dev \
+xorg \
+libfreetype6 libfreetype6-dev \
+libpango1.0-dev \
+libcairo2-dev \
+libxt-dev libssl-dev \
+libasound2-dev libjack-dev libjack0 libportaudio2 \
+libportaudiocpp0 portaudio19-dev \
+libstdc++-11-doc libstdc++-11-pic \
+cmake xpdf libxrandr-dev
 
 if [ "$APPS" = true ] ; then
   sudo apt -y install curl
@@ -42,24 +89,19 @@ cd GNUstep-build
 # Set clang as compiler
 export CC=clang
 export CXX=clang++
-export CXXFLAGS="-std=c++11"
-export RUNTIME_VERSION=gnustep-2.0
+export RUNTIME_VERSION=gnustep-2.1
 export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 export LD=/usr/bin/ld.gold
-export LDFLAGS="-fuse-ld=/usr/bin/ld.gold -L/usr/local/lib"
+export LDFLAGS="-fuse-ld=gold -L/usr/local/lib"
 
 
 # Checkout sources
 echo -e "\n\n${GREEN}Checking out sources...${NC}"
-git clone --branch swift-5.10.1-RELEASE https://github.com/apple/swift-corelibs-libdispatch
-#cd swift-corelibs-libdispatch
-#  git checkout swift-5.2.2-RELEASE
-#cd ..
+git clone https://github.com/apple/swift-corelibs-libdispatch
+
 git clone https://github.com/gnustep/libobjc2.git
 cd libobjc2
-  git submodule init
-  git submodule sync
-  git submodule update
+  git submodule init && git submodule update
 cd ..
 git clone https://github.com/gnustep/tools-make.git
 git clone https://github.com/gnustep/libs-base.git
@@ -70,49 +112,44 @@ git clone https://github.com/gnustep/libs-back.git
 if [ "$APPS" = true ] ; then
   git clone https://github.com/gnustep/apps-projectcenter.git
   git clone https://github.com/gnustep/apps-gorm.git
-  svn co http://svn.savannah.nongnu.org/svn/gap/trunk/libs/PDFKit/
+  wget http://savannah.nongnu.org/download/gap/PDFKit-1.2.0.tar.gz
   git clone https://github.com/gnustep/apps-gworkspace.git
   git clone https://github.com/gnustep/apps-systempreferences.git
 fi
 
-set -e
+if [ "$THEMES" = true ] ; then
+  git clone https://github.com/BertrandDekoninck/NarcissusRik.git
+  git clone https://github.com/BertrandDekoninck/NesedahRik.git
+  git clone https://github.com/BertrandDekoninck/rik.theme.git
+fi
+
 showPrompt
 
+set -e
 # Build GNUstep make first time
 echo -e "\n\n"
 echo -e "${GREEN}Building GNUstep-make for the first time...${NC}"
 cd tools-make
 # git checkout `git rev-list -1 --first-parent --before=2017-04-06 master` # fixes segfault, should probably be looked at.
-#./configure --enable-debug-by-default --with-layout=gnustep  --enable-objc-arc  --with-library-combo=ng-gnu-gnu
-  CC=$CC ./configure \
-          --with-layout=gnustep \
-              --disable-importing-config-file \
-                  --enable-native-objc-exceptions \
-                      --enable-objc-arc \
-                          --enable-install-ld-so-conf \
-                              --with-library-combo=ng-gnu-gnu
-
-make -j8
+./configure --enable-debug-by-default --with-layout=gnustep  --enable-objc-arc  --with-library-combo=ng-gnu-gnu
+make -j4
 sudo -E make install
 
 . /usr/GNUstep/System/Library/Makefiles/GNUstep.sh
 echo ". /usr/GNUstep/System/Library/Makefiles/GNUstep.sh" >> ~/.bashrc
 echo "export RUNTIME_VERSION=$RUNTIME_VERSION" >> ~/.bashrc
-echo 'export CXXFLAGS="-std=c++11"' >> ~/.bashrc
-
 
 showPrompt
 
-# Build libdispatch
+## Build libDIspatch
 echo -e "\n\n"
 echo -e "${GREEN}Building libdispatch...${NC}"
 cd ../swift-corelibs-libdispatch
 rm -Rf build
 mkdir build && cd build
 cmake .. -DCMAKE_C_COMPILER=${CC} \
--DCMAKE_CXX_COMPILER=${CXX} \
--DCMAKE_BUILD_TYPE=Release \
--DUSE_GOLD_LINKER=YES
+	-DCMAKE_CXX_COMPILER=${CXX} \
+	-DCMAKE_BUILD_TYPE=Release
 make
 sudo -E make install
 sudo ldconfig
@@ -125,7 +162,7 @@ echo -e "${GREEN}Building libobjc2...${NC}"
 cd ../../libobjc2
 rm -Rf build
 mkdir build && cd build
-cmake ../ -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_ASM_COMPILER=$CC -DTESTS=OFF
+cmake ../ -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_ASM_COMPILER=clang -DTESTS=OFF
 cmake --build .
 sudo -E make install
 sudo ldconfig
@@ -136,15 +173,7 @@ showPrompt
 echo -e "\n\n"
 echo -e "${GREEN}Building GNUstep-make for the second time...${NC}"
 cd ../../tools-make
-#./configure --enable-debug-by-default --with-layout=gnustep --enable-objc-arc --with-library-combo=ng-gnu-gnu
-  CC=$CC ./configure \
-          --with-layout=gnustep \
-              --disable-importing-config-file \
-                  --enable-native-objc-exceptions \
-                      --enable-objc-arc \
-                          --enable-install-ld-so-conf \
-                              --with-library-combo=ng-gnu-gnu
-
+./configure --enable-debug-by-default --with-layout=gnustep --enable-objc-arc --with-library-combo=ng-gnu-gnu
 make -j8
 sudo -E make install
 
@@ -159,17 +188,6 @@ cd ../libs-base/
 ./configure
 make -j8
 sudo -E make install
-
-showPrompt
-
-# Build GNUstep corebase
-echo -e "\n\n"
-echo -e "${GREEN}Building GNUstep corebase (set CFLAGS)...${NC}"
-cd ../libs-corebase
-CFLAGS=`gnustep-config --objc-flags` ./configure
-make -j8
-sudo -E make install
-sudo ldconfig
 
 showPrompt
 
@@ -211,7 +229,9 @@ if [ "$APPS" = true ] ; then
   showPrompt
 
   echo -e "${GREEN}Building PDFKit...${NC}"
-  cd ../PDFKit/
+  cd ..
+  tar xzf PDFKit-1.2.0.tar.gz
+  cd PDFKit-1.2.0
   ./configure
   make -j8
   sudo -E make install
@@ -233,6 +253,31 @@ if [ "$APPS" = true ] ; then
   make -j8
   sudo -E make install
 
+fi
+
+if [ "$THEMES" = true ] ; then
+  showPrompt
+
+  echo -e "\n\n"
+  echo -e "${GREEN}Not Building rik.theme...${NC}"
+  # cd ../rik.theme/
+  # make clean
+  # make -j8
+  # sudo -E make install
+
+  showPrompt
+
+  echo -e "\n\n"
+  echo -e "${GREEN}Installing NesedahRik.theme...${NC}"
+  cd ../NesedahRik/
+  sudo cp -R NesedahRik.theme /usr/GNUstep/Local/Library/Themes/
+
+  showPrompt
+
+  echo -e "\n\n"
+  echo -e "${GREEN}Installing NesedahRik.theme...${NC}"
+  cd ../NesedahRik/
+  sudo cp -R NesedahRik.theme /usr/GNUstep/Local/Library/Themes/
 fi
 
 echo -e "\n\n"

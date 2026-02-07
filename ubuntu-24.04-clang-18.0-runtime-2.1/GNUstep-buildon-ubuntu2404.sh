@@ -29,7 +29,8 @@ echo -e "\n\n${GREEN}Installing dependencies...${NC}"
 sudo apt-get update
 sudo apt -y install clang build-essential wget git subversion cmake libffi-dev libxml2-dev \
 libgnutls28-dev libicu-dev libblocksruntime-dev libkqueue-dev libpthread-workqueue-dev autoconf libtool \
-libjpeg-dev libtiff-dev libffi-dev libcairo-dev libx11-dev libxt-dev libxft-dev libxrandr-dev
+libjpeg-dev libtiff-dev libffi-dev libcairo-dev libx11-dev libxt-dev libxft-dev libxrandr-dev \
+g++-14
 
 if [ "$APPS" = true ] ; then
   sudo apt -y install curl
@@ -43,7 +44,7 @@ cd GNUstep-build
 export CC=clang
 export CXX=clang++
 export CXXFLAGS="-std=c++11"
-export RUNTIME_VERSION=gnustep-2.0
+export RUNTIME_VERSION=gnustep-2.1
 export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 export LD=/usr/bin/ld.gold
 export LDFLAGS="-fuse-ld=/usr/bin/ld.gold -L/usr/local/lib"
@@ -51,10 +52,10 @@ export LDFLAGS="-fuse-ld=/usr/bin/ld.gold -L/usr/local/lib"
 
 # Checkout sources
 echo -e "\n\n${GREEN}Checking out sources...${NC}"
-git clone --branch swift-5.10.1-RELEASE https://github.com/apple/swift-corelibs-libdispatch
-#cd swift-corelibs-libdispatch
-#  git checkout swift-5.2.2-RELEASE
-#cd ..
+git clone https://github.com/apple/swift-corelibs-libdispatch
+# cd swift-corelibs-libdispatch
+#   git checkout swift-5.5-RELEASE
+# cd ..
 git clone https://github.com/gnustep/libobjc2.git
 cd libobjc2
   git submodule init
@@ -166,7 +167,7 @@ showPrompt
 echo -e "\n\n"
 echo -e "${GREEN}Building GNUstep corebase (set CFLAGS)...${NC}"
 cd ../libs-corebase
-CFLAGS=`gnustep-config --objc-flags` ./configure
+CPP=`gnustep-config --variable=CPP` CPPFLAGS=`gnustep-config --objc-flags` CC=`gnustep-config --variable=CC` CFLAGS=`gnustep-config --objc-flags` LDFLAGS=`gnustep-config --objc-libs` ./configure
 make -j8
 sudo -E make install
 sudo ldconfig
