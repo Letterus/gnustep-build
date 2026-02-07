@@ -24,13 +24,13 @@ GREEN=`tput setaf 2`
 NC=`tput sgr0` # No Color
 
 # Set to true to also build and install apps
-APPS=false
+APPS=true
 
 # Set to true to also build and install some nice themes
-THEMES=false
+THEMES=true
 
 # Set to true to pause after each build to verify successful build and installation
-PROMPT=false
+PROMPT=true
 
 function installGNUstepMake()
 {
@@ -93,8 +93,10 @@ if [ "$APPS" = true ] ; then
 fi
 
 if [ "$THEMES" = true ] ; then
-  git clone https://github.com/BertrandDekoninck/NarcissusRik.git
-  git clone https://github.com/BertrandDekoninck/NesedahRik.git
+  git clone https://github.com/gnustep/plugins-themes-nesedahrik.git
+  git clone https://github.com/gnustep/plugins-themes-narcissusrik.git
+  git clone https://github.com/gnustep/plugins-themes-sombre.git
+  git clone https://github.com/mclarenlabs/rik.theme.git
 fi
 
 showPrompt
@@ -271,7 +273,7 @@ if [ "$THEMES" = true ] ; then
 
   echo -e "\n\n"
   echo -e "${GREEN}Installing NesedahRik.theme...${NC}"
-  cd NesedahRik/
+  cd plugins-themes-nesedahrik/
   sudo cp -R NesedahRik.theme /usr/GNUstep/System/Library/Themes/
   cd ..
 
@@ -279,10 +281,27 @@ if [ "$THEMES" = true ] ; then
 
   echo -e "\n\n"
   echo -e "${GREEN}Installing NarcissusRik.theme...${NC}"
-  cd NarcissusRik/
+  cd plugins-themes-narcissusrik/
   sudo cp -R NarcissusRik.theme /usr/GNUstep/System/Library/Themes/
   cd ..
 
+  showPrompt
+
+  echo -e "\n\n"
+  echo -e "${GREEN}Installing Sombre.theme...${NC}"
+  cd plugins-themes-sombre/
+  make -j4
+  sudo -E make install
+  cd ..
+
+  showPrompt
+
+  echo -e "\n\n"
+  echo -e "${GREEN}Installing Rik.theme...${NC}"
+  cd rik.theme/
+  make -j4
+  sudo -E make install
+  cd ..
 fi
 
 echo -e "\n\n"
