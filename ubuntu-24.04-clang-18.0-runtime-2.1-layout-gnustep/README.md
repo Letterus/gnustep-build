@@ -4,10 +4,11 @@ This variant of the build script is based upon the one for Debian 10/12 to provi
 a GNUstep installation supporting libobjc2, but using the GNUstep file system layout.
 
 I prefer that one, because in case of broken setups you may just delete `/usr/GNUstep`
-and start anew. That's way easier than fiddling the stuff out of `/usr/local/$X`.
+and start anew. I find that way easier than fiddling the stuff out of `/usr/local/$X`.
 
-For testing see files in directory `ubuntu-24.04-clang-18.0-runtime-2.1`.
+## Hints and problems
 
+* Make sure to remove/uninstall any residents of previous GNUstep installations. Otherwise configurations may get mixed up in a bad way.
 
 ## G++-14
 

@@ -1,7 +1,5 @@
 #!/bin/bash
 
-## Script to install the newest available version of GNUstep on Debian stable (buster)
-
 # Show prompt function
 function showPrompt()
 {
@@ -14,7 +12,7 @@ function showPrompt()
 # Export compiler environment vars
 export CC=clang
 export CXX=clang++
-export PATH=/usr/GNUstep/System/Tools/:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export PATH="$PATH:/usr/GNUstep/System/Tools"
 export RUNTIME_VERSION=gnustep-2.1
 export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
 export LD=/usr/bin/ld.gold
@@ -38,75 +36,28 @@ function installGNUstepMake()
 {
   echo -e "\n\n"
   echo -e "${GREEN}Building GNUstep-make...${NC}"
-  cd ../make
+  cd tools-make
   make clean
-  CC=clang-8 ./configure \
+  CC=clang ./configure \
     --with-layout=gnustep \
     --disable-importing-config-file \
     --enable-native-objc-exceptions \
     --enable-objc-arc \
     --enable-install-ld-so-conf \
     --with-library-combo=ng-gnu-gnu
-  make -j8
   sudo -E make install
+  cd ..
   sudo ldconfig
 }
 
 # Install Requirements
 echo -e "\n\n${GREEN}Installing dependencies...${NC}"
 
-echo "deb http://deb.debian.org/debian buster-backports main" | sudo tee /etc/apt/sources.list.d/backports.list
 sudo apt-get update
-sudo apt -y remove clang cmake
-
-DEBIAN_FRONTEND=noninteractive sudo apt -y install cmake/buster-backports clang-8 liblldb-8 lld-8 lld-8 lldb-8 build-essential git subversion \
-libc6 libc6-dev \
-libxml2 libxml2-dev \
-libffi6 libffi-dev \
-libicu-dev icu-devtools \
-libuuid1 uuid-dev uuid-runtime \
-libsctp1 libsctp-dev lksctp-tools \
-libavahi-core7 libavahi-core-dev \
-libavahi-client3 libavahi-client-dev \
-libavahi-common3 libavahi-common-dev libavahi-common-data \
-libgcrypt20 libgcrypt20-dev \
-libtiff5 libtiff5-dev \
-libbsd0 libbsd-dev \
-util-linux-locales \
-locales-all \
-libjpeg-dev \
-libtiff-dev \
-libcups2-dev \
-libfreetype6-dev \
-libcairo2-dev \
-libxt-dev \
-libgl1-mesa-dev \
-libpcap-dev \
-libc-dev libc++-dev libc++1 \
-python-dev swig \
-libedit-dev libeditline0 libeditline-dev \
-binfmt-support libtinfo-dev \
-bison flex m4 wget \
-libicns1 libicns-dev \
-libxslt1.1 libxslt1-dev \
-libxft2 libxft-dev \
-libflite1 flite1-dev \
-libxmu6 libxpm4 wmaker-common \
-libgnutls30 libgnutls28-dev \
-libpng-dev libpng16-16 \
-default-libmysqlclient-dev \
-libpq-dev \
-libgif7 libgif-dev libwings3 libwings-dev \
-libwraster-dev libwutil5 \
-libcups2-dev libicu63 libicu-dev \
-xorg \
-libfreetype6 libfreetype6-dev \
-libpango1.0-dev \
-libcairo2-dev \
-libxt-dev libssl-dev \
-libasound2-dev libjack-dev libjack0 libportaudio2 \
-libportaudiocpp0 portaudio19-dev \
-xpdf libxrandr-dev
+sudo apt -y install clang build-essential wget git subversion cmake libffi-dev libxml2-dev \
+libgnutls28-dev libicu-dev libblocksruntime-dev libkqueue-dev libpthread-workqueue-dev autoconf libtool \
+libjpeg-dev libtiff-dev libffi-dev libcairo-dev libx11-dev libxt-dev libxft-dev libxrandr-dev \
+g++-14
 
 if [ "$APPS" = true ] ; then
   sudo apt -y install curl
@@ -119,21 +70,19 @@ cd GNUstep-build
 # Checkout sources
 echo -e "\n\n${GREEN}Checking out sources...${NC}"
 git clone https://github.com/apple/swift-corelibs-libdispatch
-cd swift-corelibs-libdispatch
-  git checkout swift-5.3.3-RELEASE
-cd ..
 
-git clone https://github.com/gnustep/make
 git clone https://github.com/gnustep/libobjc2
 cd libobjc2
   git submodule init
   git submodule sync
   git submodule update
 cd ..
-git clone https://github.com/gnustep/base
-#git clone https://github.com/gnustep/corebase
-git clone https://github.com/gnustep/gui
-git clone https://github.com/gnustep/back
+
+git clone https://github.com/gnustep/tools-make.git
+git clone https://github.com/gnustep/libs-base.git
+git clone https://github.com/gnustep/libs-corebase.git
+git clone https://github.com/gnustep/libs-gui.git
+git clone https://github.com/gnustep/libs-back.git
 
 if [ "$APPS" = true ] ; then
   git clone https://github.com/gnustep/apps-projectcenter.git
@@ -147,11 +96,6 @@ if [ "$THEMES" = true ] ; then
   git clone https://github.com/BertrandDekoninck/NarcissusRik.git
   git clone https://github.com/BertrandDekoninck/NesedahRik.git
 fi
-
-showPrompt
-
-cd make
-installGNUstepMake
 
 showPrompt
 
@@ -169,10 +113,10 @@ echo ". /usr/GNUstep/System/Library/Makefiles/GNUstep.sh" >> ~/.bashrc
 ## Build libDispatch
 echo -e "\n\n"
 echo -e "${GREEN}Building libdispatch...${NC}"
-cd ../swift-corelibs-libdispatch
+cd swift-corelibs-libdispatch
 rm -Rf build
 mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+cmake ../ -DCMAKE_BUILD_TYPE=RelWithDebInfo \
 	 -DCMAKE_SKIP_RPATH=ON \
 	 -DCMAKE_BUILD_TYPE='None' \
 	 -DCMAKE_INSTALL_PREFIX=/usr/GNUstep \
@@ -182,38 +126,37 @@ cmake .. -DCMAKE_BUILD_TYPE=RelWithDebInfo \
 	 -DINSTALL_BLOCK_HEADERS_DIR=/usr/GNUstep/System/Library/Headers/block \
 	 -DINSTALL_OS_HEADERS_DIR=/usr/GNUstep/System/Library/Headers/os \
 	 -DINSTALL_PRIVATE_HEADERS=YES
-make
+make -j8
 sudo -E make install
+cd ../..
 sudo rm /usr/GNUstep/System/Library/Headers/block/Block.h
 sudo rm /usr/GNUstep/System/Library/Headers/block/Block_private.h
 sudo ldconfig
 
 showPrompt
 
-# Build libobjc2
-echo -e "\n\n"
-echo -e "${GREEN}Building libobjc2...${NC}"
-cd ../../libobjc2
-rm -Rf build
-mkdir build && cd build
-cmake .. -DBUILD_STATIC_LIBOBJC=1 \
-	-DGNUSTEP_INSTALL_TYPE='SYSTEM' \
-	-DCMAKE_BUILD_TYPE='Release' \
-	-DCMAKE_LIBRARY_PATH=/usr/lib \
-	-DCMAKE_INSTALL_PREFIX=/usr/GNUstep \
-    	-DCMAKE_C_COMPILER=${CC} \
-    	-DCMAKE_CXX_COMPILER=${CXX} \
-    	-DCMAKE_LINKER=${LD} \
-    	-DCMAKE_MODULE_LINKER_FLAGS="${LDFLAGS}"
-make -j8
-sudo -E make install
-sudo ldconfig
-cd ..
+# Install GNUstep make for the first time so libobjc2 picks up the correct file system layout.
+installGNUstepMake
+
+. /usr/GNUstep/System/Library/Makefiles/GNUstep.sh
 
 showPrompt
 
-# Build GNUstep make second time
+# Build libobjc2
+echo -e "\n\n"
+echo -e "${GREEN}Building libobjc2...${NC}"
+cd libobjc2
+rm -Rf build
+mkdir build && cd build
+cmake ../ -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_ASM_COMPILER=$CC -DTESTS=OFF
+make -j8
+sudo -E make install
+sudo ldconfig
+cd ../..
 
+showPrompt
+
+# Install GNUstep make for the second time to GNUstep make is configured to use libobjc2.
 installGNUstepMake
 
 . /usr/GNUstep/System/Library/Makefiles/GNUstep.sh
@@ -223,35 +166,39 @@ showPrompt
 # Build GNUstep base
 echo -e "\n\n"
 echo -e "${GREEN}Building GNUstep-base...${NC}"
-cd ../base/
+cd libs-base
 make clean
 ./configure
 make -j8
 sudo -E make GNUSTEP_INSTALLATION_DOMAIN=SYSTEM install
+cd ..
 sudo ldconfig
+
+. /usr/GNUstep/System/Library/Makefiles/GNUstep.sh
 
 showPrompt
 
 # Build GNUstep corebase
-#echo -e "\n\n"
-#echo -e "${GREEN}Building GNUstep corebase...${NC}"
-#cd ../corebase
-#make clean
-#./configure
-#make -j8
-#sudo -E make GNUSTEP_INSTALLATION_DOMAIN=SYSTEM install
-#sudo ldconfig
+echo -e "\n\n"
+echo -e "${GREEN}Building GNUstep corebase (set CFLAGS)...${NC}"
+cd libs-corebase
+CPP=`gnustep-config --variable=CPP` CPPFLAGS=`gnustep-config --objc-flags` CC=`gnustep-config --variable=CC` CFLAGS=`gnustep-config --objc-flags` LDFLAGS=`gnustep-config --objc-libs` ./configure
+make -j8
+sudo -E make install
+cd ..
+sudo ldconfig
 
-#showPrompt
+showPrompt
 
 # Build GNUstep GUI
 echo -e "\n\n"
 echo -e "${GREEN} Building GNUstep-gui...${NC}"
-cd ../gui
+cd libs-gui
 make clean
 ./configure
 make -j8
 sudo -E make GNUSTEP_INSTALLATION_DOMAIN=SYSTEM install
+cd ..
 sudo ldconfig
 
 showPrompt
@@ -259,11 +206,12 @@ showPrompt
 # Build GNUstep back
 echo -e "\n\n"
 echo -e "${GREEN}Building GNUstep-back...${NC}"
-cd ../back
+cd libs-back
 make clean
 ./configure
 make -j8
 sudo -E make GNUSTEP_INSTALLATION_DOMAIN=SYSTEM install
+cd ..
 sudo ldconfig
 
 showPrompt
@@ -276,45 +224,49 @@ sudo ldconfig
 installGNUstepMake
 if [ "$APPS" = true ] ; then
   echo -e "${GREEN}Building ProjectCenter...${NC}"
-  cd ../apps-projectcenter/
+  cd apps-projectcenter/
   make clean
   make -j8
   sudo -E make GNUSTEP_INSTALLATION_DOMAIN=SYSTEM install
+  cd ..
 
   showPrompt
 
   echo -e "${GREEN}Building Gorm...${NC}"
-  cd ../apps-gorm/
+  cd apps-gorm/
   make clean
   make -j8
   sudo -E make GNUSTEP_INSTALLATION_DOMAIN=SYSTEM install
+  cd ..
 
   showPrompt
 
   echo -e "${GREEN}Building PDFKit...${NC}"
-  cd ../PDFKit/
+  cd PDFKit/
   ./configure
   make -j8
   sudo -E make GNUSTEP_INSTALLATION_DOMAIN=SYSTEM install
-
+  cd ..
   showPrompt
 
   echo -e "\n\n"
   echo -e "${GREEN}Building GWorkspace...${NC}"
-  cd ../apps-gworkspace/
+  cd apps-gworkspace/
   make clean
-  CC=clang-8 ./configure
-  CC=clang-8 make -j8
+  CC=clang ./configure
+  CC=clang make -j8
   sudo -E make GNUSTEP_INSTALLATION_DOMAIN=SYSTEM install
+  cd ..
 
   showPrompt
 
   echo -e "\n\n"
   echo -e "${GREEN}Building SystemPreferences...${NC}"
-  cd ../apps-systempreferences/
+  cd apps-systempreferences/
   make clean
   make -j8
   sudo -E make GNUSTEP_INSTALLATION_DOMAIN=SYSTEM install
+  cd ..
 
   sudo ldconfig
 fi
@@ -325,15 +277,17 @@ if [ "$THEMES" = true ] ; then
 
   echo -e "\n\n"
   echo -e "${GREEN}Installing NesedahRik.theme...${NC}"
-  cd ../NesedahRik/
+  cd NesedahRik/
   sudo cp -R NesedahRik.theme /usr/GNUstep/System/Library/Themes/
+  cd ..
 
   showPrompt
 
   echo -e "\n\n"
   echo -e "${GREEN}Installing NarcissusRik.theme...${NC}"
-  cd ../NarcissusRik/
+  cd NarcissusRik/
   sudo cp -R NarcissusRik.theme /usr/GNUstep/System/Library/Themes/
+  cd ..
 
 fi
 
