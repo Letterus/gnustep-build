@@ -180,7 +180,7 @@ echo -e "${GREEN}Building GNUstep corebase (set CFLAGS)...${NC}"
 cd libs-corebase
 CPP=`gnustep-config --variable=CPP` CPPFLAGS=`gnustep-config --objc-flags` CC=`gnustep-config --variable=CC` CFLAGS=`gnustep-config --objc-flags` LDFLAGS=`gnustep-config --objc-libs` ./configure
 make -j8
-sudo -E make install
+sudo -E make GNUSTEP_INSTALLATION_DOMAIN=SYSTEM install
 cd ..
 sudo ldconfig
 
@@ -291,7 +291,7 @@ if [ "$THEMES" = true ] ; then
   echo -e "${GREEN}Installing Sombre.theme...${NC}"
   cd plugins-themes-sombre/
   make -j4
-  sudo -E make install
+  sudo -E make GNUSTEP_INSTALLATION_DOMAIN=SYSTEM install
   cd ..
 
   showPrompt
@@ -300,7 +300,7 @@ if [ "$THEMES" = true ] ; then
   echo -e "${GREEN}Installing Rik.theme...${NC}"
   cd rik.theme/
   make -j4
-  sudo -E make install
+  sudo -E make GNUSTEP_INSTALLATION_DOMAIN=SYSTEM install
   cd ..
 fi
 
